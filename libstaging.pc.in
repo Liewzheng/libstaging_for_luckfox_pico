@@ -1,0 +1,11 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libstaging
+Description: TFT/LCD library for fbtft_benchmark - unified interface for device operations
+Version: @PROJECT_VERSION@
+Requires:
+Libs: -L${libdir} -lstaging -lpthread -lm
+Cflags: -I${includedir}
