@@ -8,27 +8,31 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 # 设置编译选项
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O2 -Wall -Wextra")
 
-# 交叉编译工具链设置
-if(DEFINED ENV{CROSS_COMPILE})
-    set(CMAKE_C_COMPILER $ENV{CROSS_COMPILE}gcc)
-    set(CMAKE_CXX_COMPILER $ENV{CROSS_COMPILE}g++)
-else()
-    # 默认使用luckfox工具链
-    set(TOOLCHAIN_PATH "/home/liewzheng/Workspace/luckfox-pico/tools/linux/toolchain/arm-rockchip830-linux-uclibcgnueabihf/bin/")
-    set(TOOLCHAIN_PREFIX "${TOOLCHAIN_PATH}/arm-rockchip830-linux-uclibcgnueabihf-")
+# ============================================================================
+# 交叉编译工具链配置
+# ============================================================================
 
-    set(CMAKE_C_COMPILER "${TOOLCHAIN_PREFIX}gcc")
-    set(CMAKE_CXX_COMPILER "${TOOLCHAIN_PREFIX}g++")
-    set(CMAKE_AR "${TOOLCHAIN_PREFIX}ar")
-    set(CMAKE_STRIP "${TOOLCHAIN_PREFIX}strip")
-    set(CMAKE_NM "${TOOLCHAIN_PREFIX}nm")
-    set(CMAKE_OBJCOPY "${TOOLCHAIN_PREFIX}objcopy")
-    set(CMAKE_OBJDUMP "${TOOLCHAIN_PREFIX}objdump")
+# 检查是否从外部传入了 TOOLCHAIN_PREFIX
+if(DEFINED TOOLCHAIN_PREFIX AND EXISTS "${TOOLCHAIN_PREFIX}/bin/arm-rockchip830-linux-uclibcgnueabihf-gcc")
+    message(STATUS "Using external toolchain: ${TOOLCHAIN_PREFIX}")
+    
+    # ARM 架构特定标志（如果需要可以在这里添加）
+    # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard")
+    set(CMAKE_C_COMPILER "${TOOLCHAIN_PREFIX}/bin/arm-rockchip830-linux-uclibcgnueabihf-gcc")
+    set(CMAKE_CXX_COMPILER "${TOOLCHAIN_PREFIX}/bin/arm-rockchip830-linux-uclibcgnueabihf-g++")
+    set(CMAKE_AR "${TOOLCHAIN_PREFIX}/bin/arm-rockchip830-linux-uclibcgnueabihf-ar")
+    set(CMAKE_STRIP "${TOOLCHAIN_PREFIX}/bin/arm-rockchip830-linux-uclibcgnueabihf-strip")
+    
+    # 设置交叉编译标志
+    set(CMAKE_CROSSCOMPILING TRUE)
+    set(CMAKE_SYSTEM_NAME Linux)
+    set(CMAKE_SYSTEM_PROCESSOR arm)
+    
+    message(STATUS "Configuring for cross-compilation with toolchain: ${TOOLCHAIN_PREFIX}")
+else()
+    message(STATUS "Using native compilation (no external toolchain specified)")
 endif()
 
-# 设置输出目录
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # 包含目录 - 仅包含 include 目录
 include_directories(
@@ -65,6 +69,21 @@ set_target_properties(staging PROPERTIES
     C_VISIBILITY_PRESET default
     VISIBILITY_INLINES_HIDDEN OFF
 )
+
+# 如果父项目设置了统一的输出目录，使用父项目的设置
+if(CMAKE_LIBRARY_OUTPUT_DIRECTORY_FOR_SUBMODULES)
+    set_target_properties(staging PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY_FOR_SUBMODULES}"
+    )
+elseif(CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+    set_target_properties(staging PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
+    )
+else()
+    set_target_properties(staging PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+    )
+endif()
 
 # 为动态库设置包含目录
 target_include_directories(staging PUBLIC
