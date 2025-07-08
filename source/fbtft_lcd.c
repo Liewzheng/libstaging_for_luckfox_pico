@@ -206,6 +206,112 @@ int fbtft_lcd_sync(fbtft_lcd_t *lcd) {
 }
 
 /**
+ * 控制LCD电源模式
+ * @param lcd LCD设备结构体
+ * @param power_mode 电源模式：
+ *                   FBTFT_LCD_POWER_ON (0) - 显示开启
+ *                   FBTFT_LCD_POWER_OFF (1) - 显示关闭
+ *                   FBTFT_LCD_POWER_SUSPEND (4) - 显示挂起
+ * @return 成功返回0，失败返回-1
+ */
+int fbtft_lcd_power_mode(fbtft_lcd_t *lcd, int power_mode) {
+    if (!lcd) {
+        fprintf(stderr, "Error: Invalid LCD parameter\n");
+        return -1;
+    }
+    
+    // 检查电源模式参数
+    if (power_mode != FBTFT_LCD_POWER_ON && 
+        power_mode != FBTFT_LCD_POWER_OFF && 
+        power_mode != FBTFT_LCD_POWER_SUSPEND) {
+        fprintf(stderr, "Error: Invalid power mode %d\n", power_mode);
+        return -1;
+    }
+    
+    // 构建sysfs路径
+    char sysfs_path[512];
+    char *fb_device = strrchr(lcd->device_path, '/');
+    if (!fb_device) {
+        fprintf(stderr, "Error: Invalid device path format\n");
+        return -1;
+    }
+    fb_device++; // 跳过 '/'
+    
+    // 根据设备路径构建对应的sysfs blank控制路径
+    // 例如: /dev/fb0 -> /sys/bus/spi/devices/spi0.0/graphics/fb0/blank
+    snprintf(sysfs_path, sizeof(sysfs_path), 
+             "/sys/bus/spi/devices/spi0.0/graphics/%s/blank", fb_device);
+    
+    // 打开sysfs文件
+    FILE *blank_file = fopen(sysfs_path, "w");
+    if (!blank_file) {
+        // 如果标准路径失败，尝试其他可能的路径
+        snprintf(sysfs_path, sizeof(sysfs_path), 
+                 "/sys/class/graphics/%s/blank", fb_device);
+        blank_file = fopen(sysfs_path, "w");
+        
+        if (!blank_file) {
+            perror("Error: Cannot open LCD blank control file");
+            fprintf(stderr, "Tried paths:\n");
+            fprintf(stderr, "  /sys/bus/spi/devices/spi0.0/graphics/%s/blank\n", fb_device);
+            fprintf(stderr, "  /sys/class/graphics/%s/blank\n", fb_device);
+            return -1;
+        }
+    }
+    
+    // 写入电源模式值
+    if (fprintf(blank_file, "%d\n", power_mode) < 0) {
+        perror("Error: Failed to write power mode");
+        fclose(blank_file);
+        return -1;
+    }
+    
+    // 确保数据写入
+    if (fflush(blank_file) != 0) {
+        perror("Error: Failed to flush power mode");
+        fclose(blank_file);
+        return -1;
+    }
+    
+    fclose(blank_file);
+    
+    // 打印操作结果
+    const char *mode_str;
+    switch (power_mode) {
+        case FBTFT_LCD_POWER_ON:
+            mode_str = "ON";
+            break;
+        case FBTFT_LCD_POWER_OFF:
+            mode_str = "OFF";
+            break;
+        case FBTFT_LCD_POWER_SUSPEND:
+            mode_str = "SUSPEND";
+            break;
+        default:
+            mode_str = "UNKNOWN";
+            break;
+    }
+    
+    printf("LCD power mode set to %s (%d) via %s\n", mode_str, power_mode, sysfs_path);
+    
+    return 0;
+}
+
+/**
+ * 开启LCD显示 (便利函数)
+ */
+int fbtft_lcd_power_on(fbtft_lcd_t *lcd) {
+    return fbtft_lcd_power_mode(lcd, FBTFT_LCD_POWER_ON);
+}
+
+/**
+ * 关闭LCD显示 (便利函数)
+ */
+int fbtft_lcd_power_off(fbtft_lcd_t *lcd) {
+    return fbtft_lcd_power_mode(lcd, FBTFT_LCD_POWER_OFF);
+}
+
+/**
  * RGB转RGB565
  */
 uint16_t rgb_to_rgb565(uint8_t r, uint8_t g, uint8_t b) {

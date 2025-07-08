@@ -50,6 +50,16 @@ int fbtft_lcd_draw_rectangle(fbtft_lcd_t *lcd, int x1, int y1, int x2, int y2, u
 int fbtft_lcd_fill_rectangle(fbtft_lcd_t *lcd, int x1, int y1, int x2, int y2, uint16_t color);
 int fbtft_lcd_sync(fbtft_lcd_t *lcd);
 
+// 电源管理定义
+#define FBTFT_LCD_POWER_ON      0   // 显示开启
+#define FBTFT_LCD_POWER_OFF     1   // 显示关闭
+#define FBTFT_LCD_POWER_SUSPEND 4   // 显示挂起
+
+// 电源管理函数
+int fbtft_lcd_power_mode(fbtft_lcd_t *lcd, int power_mode);
+int fbtft_lcd_power_on(fbtft_lcd_t *lcd);    // 便利函数：开启显示
+int fbtft_lcd_power_off(fbtft_lcd_t *lcd);   // 便利函数：关闭显示
+
 // 颜色转换函数
 uint16_t rgb_to_rgb565(uint8_t r, uint8_t g, uint8_t b);
 void rgb565_to_rgb(uint16_t color, uint8_t *r, uint8_t *g, uint8_t *b);
