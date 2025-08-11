@@ -12,7 +12,7 @@
 #include <stdint.h>
 
 // LCD 规格定义 (这些是默认值，实际分辨率从设备获取)
-#define FBTFT_LCD_DEFAULT_WIDTH     320
+#define FBTFT_LCD_DEFAULT_WIDTH     240
 #define FBTFT_LCD_DEFAULT_HEIGHT    240
 #define FBTFT_LCD_BPP               16  // 16位色深
 
